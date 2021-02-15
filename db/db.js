@@ -72,10 +72,20 @@ async function updateEmployee(employee, field) {
 }
 
 
+async function deleteRecord (table, obj){
+    return new Promise(async function (resolve, rejec){
+        connection.query('DELETE FROM ?? WHERE id = ?', [table, obj.id], (err, res)=>{
+            if(err)return(reject(err));
+            return(resolve(res.affectedRows));
+        })
+    });
+}
+
 
 module.exports = {
     view,
     add,
     updateEmployee,
-    viewBy
+    viewBy,
+    deleteRecord
 };
