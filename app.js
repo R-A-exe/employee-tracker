@@ -2,18 +2,50 @@ const db = require('./db/db');
 const Employee = require('./classes/employee');
 const Role = require('./classes/role');
 const Department = require('./classes/department');
-(async ()=>{
-    // var dept = new Department('Department1');
-    // dept.id = await db.add('department', dept.toDb());
-    // var role = new Role('Title', 50000, dept)
-    // role.id = await db.add('role', role.toDb());
-    // var emp = new Employee('Roy', 'Atallah', role);
-    // emp.id = await db.add('employee', emp.toDb());
+const inquirer = require('inquirer');
+const cTable = require('console.table');
 
 
-    // var emp2 = new Employee('Roy2', 'Atallah2', role, emp);
-    // await db.add('employee', emp2.toDb());
-    var obj = {id: 2};
-    console.log(await db.deleteRecord('employee', obj));
 
-})();
+function mainMenu() {
+    inquirer.prompt([
+        {
+            name: 'action',
+            type: 'list',
+            choices: ['Departments', 'Roles', 'Employees', 'Quit'],
+            message: 'Choose the field you would like to see.'
+        }
+    ]).then(e => {
+        switch (e.action) {
+            case 'Departments':
+                departmentsMenu();
+                break;
+
+            case 'Roles':
+                rolesMenu();
+                break;
+
+            case 'Employees':
+                employeesMenu();
+                break;
+
+            case 'Quit':
+                return;
+        }
+    });
+}
+
+
+async function departmentsMenu(){
+    console.log('Department menu')
+}
+
+async function rolesMenu(){
+    console.log('Roles menu')
+}
+
+async function employeesMenu(){
+    console.log('Employees menu')
+}
+
+mainMenu();
