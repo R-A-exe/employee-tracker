@@ -4,6 +4,10 @@ class Role {
         this.salray = salary,
         this.department_id = department.id;
     }
+
+    toDb(){
+        return [this.title, this.salray, this.department_id]
+    }
 }
 
 
