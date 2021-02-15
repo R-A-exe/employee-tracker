@@ -1,7 +1,4 @@
-const role = require('./role');
-const department = require('./department');
-
-class employee {
+class Employee {
     constructor (firstName, lastName, role, employee){
         this.first_name = firstName;
         this.last_name = lastName;
@@ -9,3 +6,5 @@ class employee {
         this.manager_id = employee.id;
     }
 }
+
+module.exports = Employee;

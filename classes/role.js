@@ -1,14 +1,10 @@
-const department = require('./department');
-
-class role {
+class Role {
     constructor(title, salary, department){
         this.title = title,
-        this.ssalray = salary,
+        this.salray = salary,
         this.department_id = department.id;
     }
-
-
 }
 
 
-module.exports = role;
+module.exports = Role;
