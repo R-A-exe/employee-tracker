@@ -2,8 +2,8 @@ class Employee {
     constructor (firstName, lastName, role, employee){
         this.first_name = firstName;
         this.last_name = lastName;
-        this.role_id = role.id;
-        employee? this.manager_id = employee.id : this.manager_id = null;
+        isNaN(role)? this.role_id = role.id : this.role_id = role;
+        !employee? this.manager_id = null : isNaN(employee)? this.manager_id = employee.id : this.manager_id = employee;
     }
 
     toDb(){
