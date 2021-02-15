@@ -81,11 +81,21 @@ async function deleteRecord (table, obj){
     });
 }
 
+async function departmentBudget(obj){
+    return new Promise (async function (resolve, reject){
+        connection.query('SELECT SUM(role.salary) AS department_budget FROM employee JOIN role ON employee.role_id = role.id WHERE role.department_id = ?', obj.id, (err, res)=>{
+            if(err)return (reject(err));
+            return(resolve(res));
+        })
+    })
+}
+
 
 module.exports = {
     view,
     add,
     updateEmployee,
     viewBy,
-    deleteRecord
+    deleteRecord,
+    departmentBudget
 };
