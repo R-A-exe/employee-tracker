@@ -203,50 +203,42 @@ async function addRole() {
 
 async function deleteRole(roles) {
     var del = null
-    var rolesMap = new Map();
-    roles.forEach(element => {
-        rolesMap.set(element.title,)
-    })
+
     await inquirer.prompt([
         {
             name: 'id',
-            type: 'input',
-            message: 'Type the ID the role you would like to delete.',
-            validate: async (e) => {
-                return /^\d+$/.test(e) ? true : 'Please enter a valid ID';
-            }
+            type: 'list',
+            choices: roles.map(e => e.id),
+            message: 'Choose the ID the role you would like to delete.',
         }
     ]).then(async res => {
-        var del = roles.find(e => e.id == parseInt(res.id));
-        if(del){
-            console.table(del);
-            await inquirer.prompt([
-                {
-                    name: 'confirm',
-                    type: 'confirm',
-                    message: `Are you sure you want to delete this role?`,
-                    default: false
+        del = roles.find(e => e.id == parseInt(res.id));
+
+        console.table(del);
+        await inquirer.prompt([
+            {
+                name: 'confirm',
+                type: 'confirm',
+                message: `Are you sure you want to delete this role?`,
+                default: false
+            }
+        ]).then(async conf => {
+            if (conf.confirm) {
+                try {
+                    await db.deleteRecord('role', del);
+                    console.log('Successfully deleted');
+                } catch (err) {
+                    console.log(err);
                 }
-            ]).then(async conf => {
-                if (conf.confirm) {
-                    try {
-                        await db.deleteRecord('role', del);
-                        console.log('Successfully deleted');
-                    } catch (err) {
-                        console.log(err);
-                    }
-                }
-            });
-        }else{
-            console.log('ID does not exist.')
-        }
+            }
+        });
     });
     rolesMenu();
 }
 
 async function employeesMenu() {
     var employees = await db.view('employee');
-    console.table('Roles', roles);
+    console.table('Roles', employees);
 
     await inquirer.prompt([
         {
@@ -258,7 +250,7 @@ async function employeesMenu() {
     ]).then(async e => {
         switch (e.action) {
             case 'Add employee':
-                addEmployee(employees);
+                addEmployee();
                 break;
             case 'Delete employee':
                 deleteEmployee(employees);
@@ -279,37 +271,193 @@ async function employeesMenu() {
     });
 }
 
-async function addEmployee(employees){
-    var newEmp = null
-    inquirer.prompt([
+async function addEmployee() {
+    var newEmp = null;
+    var roles = await db.view('role');
+    await inquirer.prompt([
         {
             name: 'firstName',
             type: 'input',
             message: 'First name:',
-            validate: async(e)=>{
-                return e.trim()==""? 'Please enter a valid name.' : true;
+            validate: async (e) => {
+                return e.trim() == "" ? 'Please enter a valid name.' : true;
             }
         },
         {
             name: 'lastName',
             type: 'input',
             message: 'Last name:',
-            validate: async(e)=>{
-                return e.trim()==""? 'Please enter a valid name.' : true;
+            validate: async (e) => {
+                return e.trim() == "" ? 'Please enter a valid name.' : true;
             }
         }
-    ]).then(async res =>{
-        newEmp = {first_name: res.firstName, last_name: res.last_name};
-        var roles = await db.view('role');
+    ]).then(async res => {
+        newEmp = { first: res.firstName, last: res.lastName };
         console.table(roles);
         await inquirer.prompt([
             {
                 name: 'role',
-                type: 'input',
-                message: 'enter '
+                type: 'list',
+                choices: roles.map(e => e.id),
+                message: 'Choose the ID of new employee role.'
             }
-        ])
-    })
+        ]).then(async role => {
+            newEmp.role = role.role;
+            var dept = roles.find(e => e.id == newEmp.role).department;
+            const deptEmp = await db.viewBy('department_name', dept);
+            var manList = deptEmp.map(e => e.id);
+            manList.push('None');
+            console.table(deptEmp);
+            await inquirer.prompt([
+                {
+                    name: 'manager',
+                    type: 'list',
+                    choices: manList,
+                    message: 'Choose the ID of manager.'
+                }
+            ]).then(async manager => {
+                manager.manager == 'None' ? newEmp.manager = null : newEmp.manager = manager.manager;
+                try {
+                    await db.add('employee', [newEmp.first, newEmp.last, newEmp.role, newEmp.manager]);
+                    console.log('Employee successfully added.');
+                } catch (err) {
+                    err.message.includes('ER_DUP_ENTRY') ? console.log('Department already exists.') : console.log(err);
+                }
+            })
+
+        });
+    });
+    employeesMenu();
+}
+
+async function deleteEmployee(employees) {
+    var del = null
+
+    await inquirer.prompt([
+        {
+            name: 'id',
+            type: 'list',
+            choices: employees.map(e => e.id),
+            message: 'Choose the ID the employee you would like to delete.',
+        }
+    ]).then(async res => {
+        del = employees.find(e => e.id == parseInt(res.id));
+        console.table(del);
+        await inquirer.prompt([
+            {
+                name: 'confirm',
+                type: 'confirm',
+                message: `Are you sure you want to delete this employee record?`,
+                default: false
+            }
+        ]).then(async conf => {
+            if (conf.confirm) {
+                try {
+                    await db.deleteRecord('employee', del);
+                    console.log('Successfully deleted');
+                } catch (err) {
+                    console.log(err);
+                }
+            }
+        });
+    });
+    employeesMenu();
+}
+
+async function updateEmployee(employees) {
+    var emp = null;
+    await inquirer.prompt([
+        {
+            name: 'id',
+            type: 'list',
+            choices: employees.map(e => e.id),
+            message: 'Choose the ID the employee you would like to update.',
+        }
+    ]).then(async res => {
+        emp = employees.find(e => e.id == parseInt(res.id));
+        console.table(emp);
+        await inquirer.prompt([
+            {
+                name: 'field',
+                type: 'list',
+                choices: ['Last name', 'Role', 'Manager', 'Back'],
+                message: `Which field would you like to update?`,
+            }
+        ]).then(async field => {
+            switch (field.field) {
+
+                case 'Last name':
+                    await inquirer.prompt([
+                        {
+                            name: 'lastName',
+                            type: 'input',
+                            message: 'Last name:',
+                            validate: async (e) => {
+                                return e.trim() == "" ? 'Please enter a valid name.' : true;
+                            }
+                        }
+                    ]).then(async val => {
+                        emp.last_name = val.lastName;
+                        try {
+                            await db.updateEmployee(emp, 'last_name');
+                            console.log('Employee successfully updated.')
+                        } catch (err) {
+                            console.log(err);
+                        }
+                    });
+                    break;
+
+                case 'Role':
+                    var roles = await db.view('role');
+                    console.table(roles);
+                    await inquirer.prompt([
+                        {
+                            name: 'role',
+                            type: 'list',
+                            choices: roles.map(e => e.id),
+                            message: 'Choose the ID of the new role.'
+                        }
+                    ]).then(async id => {
+                        emp.role_id = id.role;
+                        try {
+                            await db.updateEmployee(emp, 'role_id');
+                            console.log('Employee successfully updated.')
+                        } catch (err) {
+                            console.log(err);
+                        }
+                    });
+                    break;
+
+                case 'Manager':
+                    const deptEmp = await db.viewBy('department_name', emp.name);
+                    var manList = deptEmp.map(e => e.id);
+                    manList.push('None');
+                    console.table(deptEmp);
+                    await inquirer.prompt([
+                        {
+                            name: 'manager',
+                            type: 'list',
+                            choices: manList,
+                            message: 'Choose the ID of manager.'
+                        }
+                    ]).then(async manager => {
+                        manager.manager == 'None' ? emp.manager_id = null : emp.manager_id = manager.manager;
+                        try {
+                            await db.updateEmployee(emp, 'manager_id');
+                            console.log('Employee successfully added.');
+                        } catch (err) {
+                            err.message.includes('ER_DUP_ENTRY') ? console.log('Department already exists.') : console.log(err);
+                        }
+                    });
+                    break;
+
+                case 'Back':
+                    updateEmployee();
+                    break;
+            }
+        });
+    });
+    employeesMenu();
 }
 
 mainMenu();

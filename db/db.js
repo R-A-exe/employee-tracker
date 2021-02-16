@@ -18,7 +18,7 @@ async function view(table) {
             break;
 
         case 'role':
-            query = 'SELECT role.id, role.title, role.salary, department.name AS department FROM role JOIN department ON department_id = department.id;'
+            query = 'SELECT role.id, role.title, role.salary, department.name AS department FROM role JOIN department ON department_id = department.id'
             break;
 
         case 'employee':
@@ -34,7 +34,7 @@ async function view(table) {
 }
 
 async function viewBy(field, obj) {
-    switch(field){
+    switch (field) {
         case 'manager':
             field = 'employee.manager_id';
             break;
@@ -43,10 +43,13 @@ async function viewBy(field, obj) {
             break;
         case 'department':
             field = 'role.department_id';
+
+        case 'department_name':
+            field = 'department.name';
     }
-    return new Promise(async function(resolve, reject){
-        connection.query('SELECT employee.id, employee.first_name, employee.last_name, role.title, role.salary, department.name, employee2.first_name AS manager_first_name, employee2.last_name AS manager_last_name FROM employee JOIN role ON employee.role_id = role.id JOIN department ON role.department_id = department.id LEFT JOIN employee as employee2 ON employee.manager_id = employee2.id WHERE ?? = ?',[field, obj.id], (err, res)=>{
-            if(err) return (reject(err));
+    return new Promise(async function (resolve, reject) {
+        connection.query('SELECT employee.id, employee.first_name, employee.last_name, role.title, role.salary, department.name, employee2.first_name AS manager_first_name, employee2.last_name AS manager_last_name FROM employee JOIN role ON employee.role_id = role.id JOIN department ON role.department_id = department.id LEFT JOIN employee as employee2 ON employee.manager_id = employee2.id WHERE ?? = ?', [field, obj], (err, res) => {
+            if (err) return (reject(err));
             return (resolve(res))
         });
     })
@@ -72,20 +75,20 @@ async function updateEmployee(employee, field) {
 }
 
 
-async function deleteRecord (table, obj){
-    return new Promise(async function (resolve, reject){
-        connection.query('DELETE FROM ?? WHERE id = ?', [table, obj.id], (err, res)=>{
-            if(err)return(reject(err));
-            return(resolve(res.affectedRows));
+async function deleteRecord(table, obj) {
+    return new Promise(async function (resolve, reject) {
+        connection.query('DELETE FROM ?? WHERE id = ?', [table, obj.id], (err, res) => {
+            if (err) return (reject(err));
+            return (resolve(res.affectedRows));
         })
     });
 }
 
-async function departmentBudget(obj){
-    return new Promise (async function (resolve, reject){
-        connection.query('SELECT SUM(role.salary) AS department_budget FROM employee JOIN role ON employee.role_id = role.id WHERE role.department_id = ?', obj.id, (err, res)=>{
-            if(err)return (reject(err));
-            return(resolve(res));
+async function departmentBudget(obj) {
+    return new Promise(async function (resolve, reject) {
+        connection.query('SELECT SUM(role.salary) AS department_budget FROM employee JOIN role ON employee.role_id = role.id WHERE role.department_id = ?', obj.id, (err, res) => {
+            if (err) return (reject(err));
+            return (resolve(res));
         })
     })
 }
