@@ -18,7 +18,7 @@ async function view(table) {
             break;
 
         case 'role':
-            query = 'SELECT role.id, role.title, role.salary, department.name FROM role JOIN department ON department_id = department.id;'
+            query = 'SELECT role.id, role.title, role.salary, department.name AS department FROM role JOIN department ON department_id = department.id;'
             break;
 
         case 'employee':
@@ -73,7 +73,7 @@ async function updateEmployee(employee, field) {
 
 
 async function deleteRecord (table, obj){
-    return new Promise(async function (resolve, rejec){
+    return new Promise(async function (resolve, reject){
         connection.query('DELETE FROM ?? WHERE id = ?', [table, obj.id], (err, res)=>{
             if(err)return(reject(err));
             return(resolve(res.affectedRows));
