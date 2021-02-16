@@ -1,5 +1,6 @@
 const db = require('./db/db');
 const inquirer = require('inquirer');
+const tcons = require('console.table');
 
 
 
@@ -200,47 +201,115 @@ async function addRole() {
     rolesMenu();
 }
 
-async function deleteRole(roles){
+async function deleteRole(roles) {
     var del = null
     var rolesMap = new Map();
-    roles.forEach(element=>{
-        rolesMap.set(element.title, )
+    roles.forEach(element => {
+        rolesMap.set(element.title,)
     })
     await inquirer.prompt([
         {
             name: 'id',
             type: 'input',
             message: 'Type the ID the role you would like to delete.',
-            validate: async(e)=>{
+            validate: async (e) => {
                 return /^\d+$/.test(e) ? true : 'Please enter a valid ID';
             }
         }
-    ]).then(async res=>{
-        var del = roles.find(e=>e.id==parseInt(res.id));
-        console.table(del);
-        await inquirer.prompt([
-            {
-                name: 'confirm',
-                type: 'confirm',
-                message: `Are you sure you want to delete this role?`,
-                default: false
-            }
-        ]).then(async conf=>{
-            if(conf.confirm){
-                try{
-                    await db.deleteRecord('role', del);
-                    console.log('Successfully deleted');
-                }catch(err){
-                    console.log(err);
+    ]).then(async res => {
+        var del = roles.find(e => e.id == parseInt(res.id));
+        if(del){
+            console.table(del);
+            await inquirer.prompt([
+                {
+                    name: 'confirm',
+                    type: 'confirm',
+                    message: `Are you sure you want to delete this role?`,
+                    default: false
                 }
-            }
-        });
+            ]).then(async conf => {
+                if (conf.confirm) {
+                    try {
+                        await db.deleteRecord('role', del);
+                        console.log('Successfully deleted');
+                    } catch (err) {
+                        console.log(err);
+                    }
+                }
+            });
+        }else{
+            console.log('ID does not exist.')
+        }
     });
     rolesMenu();
 }
 
 async function employeesMenu() {
-    console.log('Employees menu')
+    var employees = await db.view('employee');
+    console.table('Roles', roles);
+
+    await inquirer.prompt([
+        {
+            name: 'action',
+            type: 'list',
+            choices: ['Add employee', 'Delete employee', 'Update employee', 'View by...', 'Back'],
+            message: 'What would you like to do?'
+        }
+    ]).then(async e => {
+        switch (e.action) {
+            case 'Add employee':
+                addEmployee(employees);
+                break;
+            case 'Delete employee':
+                deleteEmployee(employees);
+                break;
+
+            case 'Update employee':
+                updateEmployee(employees);
+                break;
+
+            case 'View by...':
+                viewBy();
+                break;
+
+            case 'Back':
+                mainMenu();
+                break;
+        }
+    });
+}
+
+async function addEmployee(employees){
+    var newEmp = null
+    inquirer.prompt([
+        {
+            name: 'firstName',
+            type: 'input',
+            message: 'First name:',
+            validate: async(e)=>{
+                return e.trim()==""? 'Please enter a valid name.' : true;
+            }
+        },
+        {
+            name: 'lastName',
+            type: 'input',
+            message: 'Last name:',
+            validate: async(e)=>{
+                return e.trim()==""? 'Please enter a valid name.' : true;
+            }
+        }
+    ]).then(async res =>{
+        newEmp = {first_name: res.firstName, last_name: res.last_name};
+        var roles = await db.view('role');
+        console.table(roles);
+        await inquirer.prompt([
+            {
+                name: 'role',
+                type: 'input',
+                message: 'enter '
+            }
+        ])
+    })
 }
 
 mainMenu();
