@@ -101,13 +101,13 @@ async function deleteDepartment(depts) {
             {
                 name: 'confirm',
                 type: 'confirm',
-                message: `Are you sure you would like to delete ${del}?`,
+                message: `Are you sure you would like to delete this department?`,
                 default: false
             }
         ]).then(async conf => {
             if (conf.confirm) {
                 try {
-                    await db.deleteRecord('department', depts.find(el => el.name == del));
+                    await db.deleteRecord('department', depts.find(el => el.name == del).id);
                     console.log('Successfully deleted');
                 } catch (err) {
                     console.log(err);
@@ -203,7 +203,6 @@ async function addRole() {
 
 async function deleteRole(roles) {
     var del = null
-
     await inquirer.prompt([
         {
             name: 'id',
@@ -212,9 +211,7 @@ async function deleteRole(roles) {
             message: 'Choose the ID the role you would like to delete.',
         }
     ]).then(async res => {
-        del = roles.find(e => e.id == parseInt(res.id));
-
-        console.table(del);
+        del = parseInt(res.id);
         await inquirer.prompt([
             {
                 name: 'confirm',
@@ -238,7 +235,7 @@ async function deleteRole(roles) {
 
 async function employeesMenu() {
     var employees = await db.view('employee');
-    console.table('Roles', employees);
+    console.table('Employees', employees);
 
     await inquirer.prompt([
         {
@@ -303,8 +300,8 @@ async function addEmployee() {
             }
         ]).then(async role => {
             newEmp.role = role.role;
-            var dept = roles.find(e => e.id == newEmp.role).department;
-            const deptEmp = await db.viewBy('department_name', dept);
+            var roleObj = roles.find(e => e.id == newEmp.role);
+            const deptEmp = await db.viewBy('department_name', roleObj.department);
             var manList = deptEmp.map(e => e.id);
             manList.push('None');
             console.table(deptEmp);
@@ -341,8 +338,7 @@ async function deleteEmployee(employees) {
             message: 'Choose the ID the employee you would like to delete.',
         }
     ]).then(async res => {
-        del = employees.find(e => e.id == parseInt(res.id));
-        console.table(del);
+        del = parseInt(res.id);
         await inquirer.prompt([
             {
                 name: 'confirm',
@@ -429,7 +425,7 @@ async function updateEmployee(employees) {
                     break;
 
                 case 'Manager':
-                    const deptEmp = await db.viewBy('department_name', emp.name);
+                    const deptEmp = await db.viewBy('department_name', emp.department);
                     var manList = deptEmp.map(e => e.id);
                     manList.push('None');
                     console.table(deptEmp);
@@ -460,4 +456,81 @@ async function updateEmployee(employees) {
     employeesMenu();
 }
 
+
+async function viewBy() {
+    var depts = await db.view('department');
+    var field = null;
+    var depId = null;
+    await inquirer.prompt([
+        {
+            name: 'filter',
+            type: 'list',
+            choices: ['Manager', 'Role', 'Department', 'Back'],
+            message: 'Choose view.'
+        }
+    ]).then(async filter => {
+        if (filter.filter != 'Back') {
+            field = filter.filter;
+            console.table(depts);
+            await inquirer.prompt([
+                {
+                    name: 'department',
+                    type: 'list',
+                    choices: depts.map(e => e.id),
+                    message: 'Choose the ID of the department.'
+                }
+            ]).then(async department => {
+                depId = parseInt(department.department);
+                switch (field) {
+                    case 'Manager':
+                        var manList = await db.viewManagersByDept(depId);
+                        console.table(manList);
+                        await inquirer.prompt([
+                            {
+                                name: 'manager',
+                                type: 'list',
+                                choices: manList.map(e => e.id),
+                                message: 'Choose the ID of the manager.'
+                            }
+                        ]).then(async manager => {
+                            var list = await db.viewBy('manager', manager.manager);
+                            console.table(list);
+                        });
+                        viewBy();
+                        break;
+
+                    case 'Role':
+                        var roleList = await db.viewRolesByDept(depId);
+                        console.table(roleList);
+                        await inquirer.prompt([
+                            {
+                                name: 'role',
+                                type: 'list',
+                                choices: roleList.map(e => e.id),
+                                message: 'Choose the ID of the role.'
+                            }
+                        ]).then(async role => {
+                            var list = await db.viewBy('role', role.role);
+                            console.table(list);
+                        });
+                        viewBy();
+                        break;
+
+                    case 'Department':
+                        var list = await db.viewBy('department', depId);
+                        console.table(list);
+                        viewBy();
+                        break;
+                }
+            });
+        } else {
+            employeesMenu();
+        }
+    });
+}
+
 mainMenu();
+// (async function(){
+//     var list = await db.viewBy('department', 1);
+//     console.table(list);
+// })()
