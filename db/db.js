@@ -10,7 +10,7 @@ var connection = mysql.createConnection({
     database: ''
 });
 
-
+//Query view by table argument
 async function view(table) {
     var query = null;
     switch (table) {
@@ -34,8 +34,9 @@ async function view(table) {
     });
 }
 
+//View employee table by field
 async function viewBy(field, val) {
-    switch (field) {
+    switch (field) {//Update field name to match db
         case 'manager':
             field = 'employee.manager_id';
             break;
@@ -58,6 +59,7 @@ async function viewBy(field, val) {
     });
 }
 
+//Add record to a table by passing the array of values and the table name
 async function add(table, arr) {
     return new Promise(async function (resolve, reject) {
         connection.query('INSERT INTO ?? VALUES(default, ?)', [table, arr], (err, res) => {
@@ -67,6 +69,7 @@ async function add(table, arr) {
     });
 }
 
+//Update employee by passing the updated field and employee object that contains id and values
 async function updateEmployee(employee, field) {
     return new Promise(async function (resolve, reject) {
         connection.query('UPDATE employee SET ?? = ? WHERE id = ?', [field, employee[field], employee.id], (err, res) => {
@@ -77,7 +80,7 @@ async function updateEmployee(employee, field) {
 
 }
 
-
+//Delete record by passing the id of the record and the table
 async function deleteRecord(table, id) {
     return new Promise(async function (resolve, reject) {
         connection.query('DELETE FROM ?? WHERE id = ?', [table, id], (err, res) => {
@@ -87,15 +90,17 @@ async function deleteRecord(table, id) {
     });
 }
 
-async function departmentBudget(obj) {
+//Get department budget by passing department id
+async function departmentBudget(id) {
     return new Promise(async function (resolve, reject) {
-        connection.query('SELECT SUM(role.salary) AS department_budget FROM employee JOIN role ON employee.role_id = role.id WHERE role.department_id = ?', obj.id, (err, res) => {
+        connection.query('SELECT SUM(role.salary) AS department_budget FROM employee JOIN role ON employee.role_id = role.id WHERE role.department_id = ?', id, (err, res) => {
             if (err) return (reject(err));
             return (resolve(res));
         })
     })
 }
 
+//Get roles by department from department id
 async function viewRolesByDept(id){
     return new Promise(async function(resolve, reject){
         connection.query('SELECT * FROM role WHERE department_id = ? ORDER BY id ASC', id, (err, res)=>{
@@ -105,6 +110,7 @@ async function viewRolesByDept(id){
     })
 }
 
+//Get managers by department from department id
 async function viewManagersByDept(id){
     return new Promise(async function(resolve, reject){
         connection.query('SELECT DISTINCT e.id, e.first_name, e.last_name, role.title FROM employee JOIN employee AS e ON employee.manager_id = e.id JOIN role ON employee.role_id = role.id WHERE department_id = ? ORDER BY e.id ASC', id, (err, res)=>{

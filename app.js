@@ -3,7 +3,7 @@ const inquirer = require('inquirer');
 const tcons = require('console.table');
 
 
-
+//Choose section or quit
 function mainMenu() {
     inquirer.prompt([
         {
@@ -32,7 +32,7 @@ function mainMenu() {
     });
 }
 
-
+//View departments table and choose department related actions
 async function departmentsMenu() {
     var depts = await db.view('department');
     console.table('Departments', depts);
@@ -64,7 +64,9 @@ async function departmentsMenu() {
     });
 }
 
+//Add department
 async function addDepartment() {
+    //Get department name from user
     await inquirer.prompt([
         {
             name: 'name',
@@ -75,6 +77,7 @@ async function addDepartment() {
             }
         }
     ]).then(async e => {
+        //Send department name and table to db function to add
         try {
             await db.add('department', e.name);
             console.log(`${e.name} successfully added`);
@@ -82,12 +85,14 @@ async function addDepartment() {
             err.message.includes('ER_DUP_ENTRY') ? console.log('Department already exists.') : console.log(err);
         }
     });
-
+    //When done, reload departments menu
     departmentsMenu();
 }
 
+//Delete department
 async function deleteDepartment(depts) {
     var del = null
+    //Get department name (unique value)
     await inquirer.prompt([
         {
             name: 'name',
@@ -96,6 +101,7 @@ async function deleteDepartment(depts) {
             message: "Choose the department you would like to delete."
         }
     ]).then(async e => {
+        //Confirm
         del = e.name;
         await inquirer.prompt([
             {
@@ -105,6 +111,7 @@ async function deleteDepartment(depts) {
                 default: false
             }
         ]).then(async conf => {
+            //Send table and row to db function to delete
             if (conf.confirm) {
                 try {
                     await db.deleteRecord('department', depts.find(el => el.name == del).id);
@@ -115,10 +122,13 @@ async function deleteDepartment(depts) {
             }
         });
     });
+    //When done, reload departments menu
     departmentsMenu();
 }
 
+//View department budget
 async function viewDepartmentBudget(depts) {
+    //Choose department
     await inquirer.prompt([
         {
             name: 'name',
@@ -127,8 +137,9 @@ async function viewDepartmentBudget(depts) {
             message: "Choose the department you would like to review."
         }
     ]).then(async e => {
+        //Send department id to db function and display response
         try {
-            var budget = await db.departmentBudget(depts.find(el => el.name == e.name));
+            var budget = await db.departmentBudget(depts.find(el => el.name == e.name).id);
             console.log(`The budget for ${e.name} is $${budget[0].department_budget}`);
         } catch (err) {
             console.log(err);
@@ -137,6 +148,7 @@ async function viewDepartmentBudget(depts) {
     departmentsMenu();
 }
 
+//View roles table and choose role related action
 async function rolesMenu() {
     var roles = await db.view('role');
     console.table('Roles', roles);
@@ -164,8 +176,10 @@ async function rolesMenu() {
     });
 }
 
+//Add role
 async function addRole() {
     var depts = await db.view('department');
+    //Get role title
     await inquirer.prompt([
         {
             name: 'title',
@@ -175,6 +189,7 @@ async function addRole() {
                 return e.trim() == "" ? 'Please enter a valid name.' : true;
             }
         },
+        //Get role salary
         {
             name: 'salary',
             type: 'input',
@@ -183,6 +198,8 @@ async function addRole() {
                 return /^\d+$/.test(e) ? true : 'Please enter a valid amount';
             }
         },
+
+        //Get role department
         {
             name: 'department',
             type: 'list',
@@ -190,6 +207,7 @@ async function addRole() {
             message: 'Which department does this role belong to?'
         },
     ]).then(async res => {
+        //Send table name and field value to 'add' function in db
         try {
             var newRole = [res.title, parseInt(res.salary), depts.find(el => el.name == res.department).id]
             db.add('role', newRole);
@@ -201,8 +219,10 @@ async function addRole() {
     rolesMenu();
 }
 
+//Delete role
 async function deleteRole(roles) {
     var del = null
+    //Get role id 
     await inquirer.prompt([
         {
             name: 'id',
@@ -211,6 +231,7 @@ async function deleteRole(roles) {
             message: 'Choose the ID the role you would like to delete.',
         }
     ]).then(async res => {
+        //Confirm deletion
         del = parseInt(res.id);
         await inquirer.prompt([
             {
@@ -220,6 +241,7 @@ async function deleteRole(roles) {
                 default: false
             }
         ]).then(async conf => {
+            //Send table name and row id to 'delete' function in db
             if (conf.confirm) {
                 try {
                     await db.deleteRecord('role', del);
@@ -233,10 +255,10 @@ async function deleteRole(roles) {
     rolesMenu();
 }
 
+//View employees table and choose employee related action
 async function employeesMenu() {
     var employees = await db.view('employee');
     console.table('Employees', employees);
-
     await inquirer.prompt([
         {
             name: 'action',
@@ -268,9 +290,11 @@ async function employeesMenu() {
     });
 }
 
+//Add employee
 async function addEmployee() {
     var newEmp = null;
     var roles = await db.view('role');
+    //Get first and last name
     await inquirer.prompt([
         {
             name: 'firstName',
@@ -289,6 +313,7 @@ async function addEmployee() {
             }
         }
     ]).then(async res => {
+        //Choose role
         newEmp = { first: res.firstName, last: res.lastName };
         console.table(roles);
         await inquirer.prompt([
@@ -299,6 +324,7 @@ async function addEmployee() {
                 message: 'Choose the ID of new employee role.'
             }
         ]).then(async role => {
+            //Chose manager from list of department employees
             newEmp.role = role.role;
             var roleObj = roles.find(e => e.id == newEmp.role);
             const deptEmp = await db.viewBy('department_name', roleObj.department);
@@ -313,6 +339,7 @@ async function addEmployee() {
                     message: 'Choose the ID of manager.'
                 }
             ]).then(async manager => {
+                //Send table name and field values to 'add' function in db
                 manager.manager == 'None' ? newEmp.manager = null : newEmp.manager = manager.manager;
                 try {
                     await db.add('employee', [newEmp.first, newEmp.last, newEmp.role, newEmp.manager]);
@@ -327,9 +354,10 @@ async function addEmployee() {
     employeesMenu();
 }
 
+//Delete employee
 async function deleteEmployee(employees) {
     var del = null
-
+    //Get employee id
     await inquirer.prompt([
         {
             name: 'id',
@@ -338,6 +366,7 @@ async function deleteEmployee(employees) {
             message: 'Choose the ID the employee you would like to delete.',
         }
     ]).then(async res => {
+        //Confirm
         del = parseInt(res.id);
         await inquirer.prompt([
             {
@@ -347,6 +376,7 @@ async function deleteEmployee(employees) {
                 default: false
             }
         ]).then(async conf => {
+            //Send table and id to 'delete' function
             if (conf.confirm) {
                 try {
                     await db.deleteRecord('employee', del);
@@ -359,9 +389,10 @@ async function deleteEmployee(employees) {
     });
     employeesMenu();
 }
-
+//Update employee
 async function updateEmployee(employees) {
     var emp = null;
+    //Get employee id
     await inquirer.prompt([
         {
             name: 'id',
@@ -370,6 +401,7 @@ async function updateEmployee(employees) {
             message: 'Choose the ID the employee you would like to update.',
         }
     ]).then(async res => {
+        //Get field to update
         emp = employees.find(e => e.id == parseInt(res.id));
         console.table(emp);
         await inquirer.prompt([
@@ -381,7 +413,7 @@ async function updateEmployee(employees) {
             }
         ]).then(async field => {
             switch (field.field) {
-
+                //If last name, get new last name and send to 'updateEmployee' function along with id
                 case 'Last name':
                     await inquirer.prompt([
                         {
@@ -402,7 +434,7 @@ async function updateEmployee(employees) {
                         }
                     });
                     break;
-
+                //If role, get new role id and send to 'updateEmployee' function along with id  
                 case 'Role':
                     var roles = await db.view('role');
                     console.table(roles);
@@ -423,7 +455,7 @@ async function updateEmployee(employees) {
                         }
                     });
                     break;
-
+                //If manager, get new manager id and send to 'updateEmployee' function along with id
                 case 'Manager':
                     const deptEmp = await db.viewBy('department_name', emp.department);
                     var manList = deptEmp.map(e => e.id);
@@ -446,9 +478,9 @@ async function updateEmployee(employees) {
                         }
                     });
                     break;
-
+                //If back, reload function
                 case 'Back':
-                    updateEmployee();
+                    updateEmployee(employees);
                     break;
             }
         });
@@ -456,12 +488,13 @@ async function updateEmployee(employees) {
     employeesMenu();
 }
 
-
+//View employees by department, manager, or role
 async function viewBy() {
     var depts = await db.view('department');
     var field = null;
     var depId = null;
     await inquirer.prompt([
+        //Choose view
         {
             name: 'filter',
             type: 'list',
@@ -469,9 +502,11 @@ async function viewBy() {
             message: 'Choose view.'
         }
     ]).then(async filter => {
+        //IF back, reload employee menu, else...
         if (filter.filter != 'Back') {
             field = filter.filter;
             console.table(depts);
+            //Get department ID, used to filter other fields or display by department
             await inquirer.prompt([
                 {
                     name: 'department',
@@ -482,6 +517,7 @@ async function viewBy() {
             ]).then(async department => {
                 depId = parseInt(department.department);
                 switch (field) {
+                    //If by manager, get department managers, and get user choice
                     case 'Manager':
                         var manList = await db.viewManagersByDept(depId);
                         console.table(manList);
@@ -493,12 +529,14 @@ async function viewBy() {
                                 message: 'Choose the ID of the manager.'
                             }
                         ]).then(async manager => {
+                            //send id and field name (manager) to viewBy function
                             var list = await db.viewBy('manager', manager.manager);
                             console.table(list);
                         });
+                        //When done, reload viewBy menu
                         viewBy();
                         break;
-
+                    //If by role, get department roles, and get user choice
                     case 'Role':
                         var roleList = await db.viewRolesByDept(depId);
                         console.table(roleList);
@@ -510,27 +548,29 @@ async function viewBy() {
                                 message: 'Choose the ID of the role.'
                             }
                         ]).then(async role => {
+                            //send id and field name (role) to viewBy function
                             var list = await db.viewBy('role', role.role);
                             console.table(list);
                         });
+                        //When done, reload viewBy menu
                         viewBy();
                         break;
 
                     case 'Department':
+                        //send id and field name (department) to viewBy function
                         var list = await db.viewBy('department', depId);
                         console.table(list);
+                        //When done, reload viewBy menu
                         viewBy();
                         break;
                 }
             });
         } else {
+            //when back, reload employee menu
             employeesMenu();
         }
     });
 }
 
+//Launch interface
 mainMenu();
-// (async function(){
-//     var list = await db.viewBy('department', 1);
-//     console.table(list);
-// })()
