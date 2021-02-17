@@ -1,4 +1,4 @@
-const db = require('./db/db');
+const db = require('./db/database');
 const inquirer = require('inquirer');
 const tcons = require('console.table');
 
